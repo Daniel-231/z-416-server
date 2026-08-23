@@ -1,0 +1,33 @@
+import express, { Application } from 'express';
+import { createServer } from 'node:http';
+import { Server } from 'socket.io';
+
+import usersRouter from './Routes/usersRouter';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const app: Application = express();
+const server = createServer(app);
+const io = new Server(server);
+const PORT = process.env.PORT ?? 5000;
+
+app.use(express.json());
+app.use('/users', usersRouter);
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
+io.on('connection', (socket) => {
+  console.log('connected:', socket.id);
+  socket.on('disconnect', (reason) => {
+    console.log('disconnected:', socket.id, reason);
+  });
+});
+
+
+
+server.listen(PORT, () => {
+  console.log(`Express Server is Listening On Port: ${PORT}`);
+});
