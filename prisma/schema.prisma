@@ -12,7 +12,49 @@ datasource db {
   provider = "postgresql"
 }
 
-model TestTable {
+
+model User {
   id String @id @default(uuid())
-  bio String
+  email String @unique
+  username String @unique
+  passwordHash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  friendshipsInitiated Friendship[] @relation("Requester")
+  friendshipsReceived  Friendship[] @relation("Addressee")
+  locations            Location[]
+}
+
+model Friendship {
+  id String @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status FriendshipStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requester User @relation("Requester", fields: [requesterId], references: [id])
+  addressee User @relation("Addressee", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  userId    String
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  heading   Float?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }

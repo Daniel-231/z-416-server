@@ -10,6 +10,7 @@ dist/
 .windsurf/
 .claude/
 .agents/
+/docs/
 
 coverage/
 *.tsbuildinfo
