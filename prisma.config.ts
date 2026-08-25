@@ -9,6 +9,11 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
-  }, 
+    // CLI-only (migrate/studio/db pull). The Prisma Client at runtime
+    // (src/lib/prisma.ts) connects with the pooled DATABASE_URL instead —
+    // @prisma/config 7.9.1 has no working `directUrl` option, and running
+    // migrations through Supabase's pgbouncer pooler hangs on the advisory
+    // lock, so the CLI needs the direct/session connection here.
+    url: env("DIRECT_URL"),
+  },
 });
