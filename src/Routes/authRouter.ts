@@ -4,10 +4,11 @@ import { requireAuth } from "../Middleware/requireAuth";
 
 const router = Router();
 
-router.post("/sync", requireAuth, async (req: Request, res: Response) => {
+router.post("/sync", requireAuth, async (req: Request, res: Response) => { // Sync Supabase User With SQL User
   const supaUser = req.supabaseUser!;
 
-  const user = await prisma.user.upsert({
+  try {
+    const user = await prisma.user.upsert({
     where: { authId: supaUser.id },
     update: { email: supaUser.email! },
     create: {
@@ -21,6 +22,10 @@ router.post("/sync", requireAuth, async (req: Request, res: Response) => {
   });
 
   res.json(user);
+  } catch (error) {
+    console.error(error);
+    console.log("Failed To Sync User With Error:", error);
+  }
 });
 
 export default router;
