@@ -25,6 +25,7 @@ router.post("/sync", requireAuth, async (req: Request, res: Response) => { // Sy
   } catch (error) {
     console.error(error);
     console.log("Failed To Sync User With Error:", error);
+    return res.status(500).json({ error: "Failed to sync user" });
   }
 });
 

@@ -4,7 +4,6 @@
   "private": true,
   "description": "Backend for the z-416 app (auth, friends, live location relay).",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
