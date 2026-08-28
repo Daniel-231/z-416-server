@@ -1,4 +1,5 @@
 import { type Request, type Response, Router } from "express";
+import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../Middleware/requireAuth";
 
@@ -6,6 +7,12 @@ const router = Router();
 
 router.post("/sync", requireAuth, async (req: Request, res: Response) => { // Sync Supabase User With SQL User
   const supaUser = req.supabaseUser!;
+  const username = req.body.username;
+
+  if (typeof username !== "string" || username.trim().length === 0) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
 
   try {
     const user = await prisma.user.upsert({
@@ -17,16 +24,18 @@ router.post("/sync", requireAuth, async (req: Request, res: Response) => { // Sy
       authProvider: "EMAIL",
       // Supabase doesn't give you a username — derive a placeholder and let the
       // user set a real one later (schema requires it unique).
-      username: `${supaUser.email!.split("@")[0]}-${supaUser.id.slice(0, 6)}`,
+      username: username.trim()
     },
   });
 
   res.json(user);
   } catch (error) {
-    console.error(error);
-    console.log("Failed To Sync User With Error:", error);
-    return res.status(500).json({ error: "Failed to sync user" });
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    return res.status(409).json({ error: "Username already taken" });
   }
+  console.error("Failed to sync user:", error);
+  return res.status(500).json({ error: "Failed to sync user" });
+}
 });
 
 export default router;
