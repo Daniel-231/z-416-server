@@ -1,4 +1,5 @@
 import { type Request, type Response, Router } from "express";
+import { Prisma } from "../generated/prisma/client";
 import { requireAuth }from "../Middleware/requireAuth";
 import { prisma } from "../lib/prisma";
 
@@ -61,30 +62,51 @@ router.get("/friend_requests", requireAuth, async (req: Request, res: Response) 
 });
 
 router.post("/send_request", requireAuth, async (req: Request, res: Response) => {
-    const { addresseeId } = req.body;
-    if (typeof addresseeId !== "string" || addresseeId.trim().length === 0) {
-        return res.status(400).json({ error: "addresseeId is required" });
+    const { username } = req.body;
+    if (typeof username !== "string" || username.trim().length === 0) {
+        return res.status(400).json({ error: "username is required" });
     }
-    
+
     try {
         // Find the current user based on their auth ID
         const currentUser = await prisma.user.findUnique({
-            where: { authId: req.supabaseUser!.id }
+            where: { authId: req.supabaseUser.id }
         });
+        if (!currentUser) return res.status(404).json({ error: "User not synced" });
 
-        // Check if the user exists and is not trying to send a request to themselves
-        if (!currentUser) return res.status(404).json({ error: "User not found" });
-        if (currentUser.id === addresseeId) return res.status(400).json({ error: "Cannot send friend request to yourself" });
+        // can't do case-insensitive matching).
+        const addressee = await prisma.user.findFirst({
+            where: { username: { equals: username.trim(), mode: "insensitive" } }
+        });
+        if (!addressee) return res.status(404).json({ error: "No user with that username" });
+        if (addressee.id === currentUser.id) {
+            return res.status(400).json({ error: "Cannot send friend request to yourself" });
+        }
+
+        // A friendship row may be stored in either direction — block both
+        const existing = await prisma.friendship.findFirst({
+            where: {
+                OR: [
+                    { requesterId: currentUser.id, addresseeId: addressee.id },
+                    { requesterId: addressee.id, addresseeId: currentUser.id }
+                ]
+            }
+        });
+        if (existing) return res.status(409).json({ error: "Friendship already exists" });
 
         const friendship = await prisma.friendship.create({
             data: {
                 requesterId: currentUser.id,
-                addresseeId: addresseeId
+                addresseeId: addressee.id
             }
         });
         res.status(201).json(friendship);
     } catch (error) {
-        res.status(400).json({ error: "Request already exists or invalid IDs" });
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            return res.status(409).json({ error: "Request already exists" });
+        }
+        console.error("POST /send_request failed:", error);
+        res.status(500).json({ error: "Failed to send friend request" });
     }
 });
 
