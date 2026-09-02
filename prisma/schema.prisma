@@ -15,14 +15,20 @@ datasource db {
 
 model User {
   id String @id @default(uuid())
+  authId String @unique
   email String @unique
+  authProvider AuthProvider
   username String @unique
-  passwordHash String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   friendshipsInitiated Friendship[] @relation("Requester")
   friendshipsReceived  Friendship[] @relation("Addressee")
-  locations            Location[]
+  locationSharesRequested LocationShare[] @relation("ShareRequester")
+  locationSharesShared    LocationShare[] @relation("ShareSharer")
+}
+
+enum AuthProvider {
+  EMAIL
 }
 
 model Friendship {
@@ -45,16 +51,22 @@ enum FriendshipStatus {
   BLOCKED
 }
 
-model Location {
-  id        String   @id @default(uuid())
-  userId    String
-  latitude  Float
-  longitude Float
-  accuracy  Float?
-  heading   Float?
-  createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+model LocationShare {
+  id          String   @id @default(uuid())
+  requesterId String   // wants to see
+  sharerId    String   // being tracked
+  status      LocationShareStatus @default(REQUESTED)
+  createdAt   DateTime @default(now())
+  endedAt     DateTime?
 
-  @@index([userId, createdAt])
+  requester User @relation("ShareRequester", fields: [requesterId], references: [id])
+  sharer    User @relation("ShareSharer",    fields: [sharerId],    references: [id])
+}
+
+enum LocationShareStatus {
+  REQUESTED
+  ACTIVE
+  ENDED
+  DECLINED
 }
