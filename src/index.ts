@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 
 import usersRouter from './Routes/usersRouter';
 import authRouter from './Routes/authRouter';
+import friendsRouter from './Routes/friendsRouter';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
@@ -19,20 +20,17 @@ const PORT = process.env.PORT ?? 5000;
 app.use(express.json());
 app.use(cors());
 
+// Routes
 app.use('/users', usersRouter);
 app.use('/auth', authRouter);
+app.use('/friends', friendsRouter);
 
-app.get("/", (_req: Request, res: Response) => {
-  res.json("Hello Worldd");
-  
-});
-
+ // Initialize WebSocket server
 initSocket(server);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
-
 
 
 server.listen(PORT, () => {
