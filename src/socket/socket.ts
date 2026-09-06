@@ -20,11 +20,31 @@ export function initSocket(server: HttpServer): Server {
   io.on('connection', (socket: Socket) => {
     console.log('connected:', socket.id);
 
-    socket.on('sendLocation', (location: LocationDataType) => {
-      socket.broadcast.emit('sendLocation', {
-        from: socket.id, location
-      });
+    socket.on('joinRoom', (roomId) => { // Both devices join the same room to share location updates
+      socket.join(roomId);
+      console.log("Joined Room:", roomId);
     });
+
+    socket.on('getCurrentAvailableRooms', () => {
+      console.log("Current Rooms Available:", Array.from(socket.rooms).map(room => room));
+    });
+
+
+    socket.on('closeRoom', (roomId) => { // Client leaves the room
+      socket.leave(roomId);
+      console.log("Left Room:", roomId);
+    });
+     
+    // client sends their location to room
+    socket.on('sendLocation', ({ roomId, location }: { roomId: string; location: LocationDataType; }) => {
+      // “emit to all sockets in this room except this socket.” So A will not receive A’s own update, but B will
+      socket.to(roomId).emit("sendLocation", {
+        from: socket.id,
+        location,
+      });
+      console.log(`Location: ${location} sent to roomId: ${roomId}`);
+    });
+
 
     socket.on('disconnect', (reason) => {
       console.log('disconnected:', socket.id, reason);

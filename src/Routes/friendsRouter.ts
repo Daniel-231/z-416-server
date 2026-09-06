@@ -167,7 +167,49 @@ router.put("/:id/decline_request", requireAuth, async (req: Request, res: Respon
   }
 });
 
+// Get the friendship ID between the current user and a specified friend by username
+router.get("/get_friendship_id", requireAuth, async (req: Request, res: Response) => {
+    try {
+        const currentUser = await prisma.user.findUnique({
+            where: { authId: req.supabaseUser!.id }
+        });
 
+        if (!currentUser) return res.status(404).json({ error: "User not synced" });
+
+        const { username } = req.query;
+        if (typeof username !== "string" || username.trim().length === 0) {
+        return res.status(400).json({ error: "username is required" });
+        }
+
+        const friend = await prisma.user.findFirst({
+            where: {username: { equals: username.trim() }}
+        });
+
+        if (!friend) {
+            return res.status(404).json({ error: "Friend not found" });
+        }
+
+        const friendship = await prisma.friendship.findFirst({
+            where: {
+                status: "ACCEPTED", // Only consider accepted friendships
+                OR: [ // (requesterId = me AND addresseeId = friend) OR (requesterId = friend AND addresseeId = me) 
+                { requesterId: currentUser.id, addresseeId: friend.id },
+                { requesterId: friend.id, addresseeId: currentUser.id },
+                ],
+            }
+        });
+
+        if (!friendship) {
+            return res.status(404).json({ error: "Friendship not found" });
+        }
+
+        res.status(200).json({ friendshipId: friendship.id });
+
+    } catch (error) {
+        console.error("GET /get_friendship_id failed:", error);
+        res.status(500).json({ error: `Failed to get friendship id with error: ${error}` });
+    }
+});
 
 
 export default router;
