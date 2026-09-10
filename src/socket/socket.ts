@@ -32,7 +32,7 @@ export function initSocket(server: HttpServer): Server {
 
     socket.on('closeRoom', (roomId) => { // Client leaves the room
       socket.leave(roomId);
-      console.log("Left Room:", roomId);
+      console.log(`ClientId: ${socket.id} left Room: ${roomId}`);
     });
      
     // client sends their location to room
@@ -42,7 +42,7 @@ export function initSocket(server: HttpServer): Server {
         from: socket.id,
         location,
       });
-      console.log(`Location: ${location} sent to roomId: ${roomId}`);
+      console.log(`Device Location ${socket.id}: ${location.coords.latitude}, ${location.coords.longitude} sent to roomId: ${roomId}`);
     });
 
 
