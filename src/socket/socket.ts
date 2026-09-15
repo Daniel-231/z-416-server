@@ -1,6 +1,10 @@
 import { Server as HttpServer } from 'node:http';
 import { Server, Socket } from 'socket.io';
 
+import { Prisma } from "../generated/prisma/client";
+import { prisma } from "../lib/prisma";
+import { requireAuth } from "../Middleware/requireAuth";
+
 type LocationDataType = {
   coords: {
     accuracy: number;
@@ -25,14 +29,14 @@ export function initSocket(server: HttpServer): Server {
       console.log("Joined Room:", roomId);
     });
 
-    socket.on('getCurrentAvailableRooms', () => {
+    socket.on('getCurrentAvailableRooms', async () => {
       console.log("Current Rooms Available:", Array.from(socket.rooms).map(room => room));
     });
 
 
     socket.on('closeRoom', (roomId) => { // Client leaves the room
       socket.leave(roomId);
-      console.log("Left Room:", roomId);
+      console.log(`ClientId: ${socket.id} left Room: ${roomId}`);
     });
      
     // client sends their location to room
@@ -42,7 +46,7 @@ export function initSocket(server: HttpServer): Server {
         from: socket.id,
         location,
       });
-      console.log(`Location: ${location} sent to roomId: ${roomId}`);
+      console.log(`Device Location ${socket.id}: ${location.coords.latitude}, ${location.coords.longitude} sent to roomId: ${roomId}`);
     });
 
 

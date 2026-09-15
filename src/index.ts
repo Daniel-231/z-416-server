@@ -5,6 +5,7 @@ import { createServer } from 'node:http';
 import usersRouter from './Routes/usersRouter';
 import authRouter from './Routes/authRouter';
 import friendsRouter from './Routes/friendsRouter';
+import locationSharesRouter from './Routes/locationSharesRouter';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
@@ -24,6 +25,7 @@ app.use(cors());
 app.use('/users', usersRouter);
 app.use('/auth', authRouter);
 app.use('/friends', friendsRouter);
+app.use('/location-share', locationSharesRouter);
 
  // Initialize WebSocket server
 initSocket(server);
