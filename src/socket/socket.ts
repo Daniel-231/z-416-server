@@ -1,6 +1,10 @@
 import { Server as HttpServer } from 'node:http';
 import { Server, Socket } from 'socket.io';
 
+import { Prisma } from "../generated/prisma/client";
+import { prisma } from "../lib/prisma";
+import { requireAuth } from "../Middleware/requireAuth";
+
 type LocationDataType = {
   coords: {
     accuracy: number;
@@ -25,7 +29,7 @@ export function initSocket(server: HttpServer): Server {
       console.log("Joined Room:", roomId);
     });
 
-    socket.on('getCurrentAvailableRooms', () => {
+    socket.on('getCurrentAvailableRooms', async () => {
       console.log("Current Rooms Available:", Array.from(socket.rooms).map(room => room));
     });
 
