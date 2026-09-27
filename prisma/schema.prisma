@@ -43,6 +43,7 @@ model Friendship {
   addressee User @relation("Addressee", fields: [addresseeId], references: [id])
 
   @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status]) 
 }
 
 enum FriendshipStatus {
@@ -62,6 +63,9 @@ model LocationShare {
 
   requester User @relation("ShareRequester", fields: [requesterId], references: [id])
   sharer    User @relation("ShareSharer",    fields: [sharerId],    references: [id])
+
+  @@index([sharerId, status])
+  @@index([requesterId, status])
 }
 
 enum LocationShareStatus {

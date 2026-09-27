@@ -6,22 +6,47 @@ import express, { Request, Response } from "express";
 
 const router = express.Router();
 
-router.post("/send-location-share", requireAuth, async (req: Request, res: Response) => {
-    const { requesterId, sharerId } = req.body;
-    if(!requesterId || !sharerId) {
-        return res.status(400).json({ error: "Missing requesterId or sharerId" });
+router.get("/requests", requireAuth, async (req: Request, res: Response) => {
+    const currentUser = await prisma.user.findUnique({
+        where: {
+            authId: req.supabaseUser.id
+        }
+    });
+
+    if (!currentUser) {
+        return res.status(404).json({ error: "Current user not found" });
+    }
+
+    const requests = await prisma.locationShare.findMany({
+        where: { sharerId: currentUser.id, status: "REQUESTED" },
+        include: { requester: true },
+        orderBy: { createdAt: "desc" },
+    });
+
+    res.status(200).json(requests);
+});
+
+router.post("/request-location-share", requireAuth, async (req: Request, res: Response) => {
+    const currentUser = await prisma.user.findUnique({
+        where: {
+            authId: req.supabaseUser.id
+        }
+    });
+    const { sharerId }  = req.body;
+
+    if (!currentUser) {
+        return res.status(404).json({ error: "Current user not found" });
     }
 
     try {
         const locationShareRequest = await prisma.locationShare.create({
             data: {
-                requesterId,
+                requesterId: currentUser.id,
                 sharerId,
                 status: "REQUESTED",
                 createdAt: new Date(),
             }
         });
-        console.log(locationShareRequest);
         res.status(201).json(locationShareRequest);
     } catch (error) {
         console.error(error);
