@@ -4,6 +4,8 @@ import { requireAuth } from "../Middleware/requireAuth";
 
 import express, { Request, Response } from "express";
 
+import { getIO } from "../socket/socket";
+
 const router = express.Router();
 
 router.get("/requests", requireAuth, async (req: Request, res: Response) => {
@@ -73,7 +75,10 @@ router.patch("/:id/accept", requireAuth, async (req: Request, res: Response) => 
             return res.status(404).json({ error: "No pending share with that id for you" });
         }
 
-        const share = await prisma.locationShare.findUnique({ where: { id: req.params.id } });
+        const share = await prisma.locationShare.findUnique({ where: { id: req.params.id }, include: { sharer: {select: { id: true, username: true } } } });
+        if (share) {
+            getIO().to(`user:${share.requesterId}`).emit("locationShare:accepted", share);
+        }
         res.status(200).json(share);
     } catch (error) {
         console.error("PATCH /accept failed:", error);
