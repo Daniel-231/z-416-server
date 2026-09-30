@@ -4,6 +4,7 @@ import { Server, Socket } from 'socket.io';
 import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../Middleware/requireAuth";
+import { supabaseAdmin } from "../lib/supabase";
 
 type LocationDataType = {
   coords: {
@@ -18,11 +19,31 @@ type LocationDataType = {
   timestamp: number;
 };
 
+let io: Server;
+export const getIO = () => io; // so routes can emit
+
 export function initSocket(server: HttpServer): Server {
-  const io = new Server(server);
+  io = new Server(server);
+
+  io.use(async (socket, next) => {
+    try {
+      const { data, error } = await supabaseAdmin.auth.getUser(socket.handshake.auth?.token);
+      if (error || !data.user) return next(new Error("Unauthorized"));
+
+      const user = await prisma.user.findUnique({ where: { authId: data.user.id } });
+      if (!user) return next(new Error("User not found"));
+
+      socket.data.userId = user.id;
+      next();
+    } catch (error) {
+      next(new Error("Unauthorized"));
+    }
+  });
 
   io.on('connection', (socket: Socket) => {
     console.log('connected:', socket.id);
+    socket.join(`user:${socket.data.userId}`); // a private "inbox" room for this user
+    console.log('connected:', socket.id, 'user:', socket.data.userId);
 
     socket.on('joinRoom', (roomId) => { // Both devices join the same room to share location updates
       socket.join(roomId);

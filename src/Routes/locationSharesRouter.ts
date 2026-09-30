@@ -4,24 +4,51 @@ import { requireAuth } from "../Middleware/requireAuth";
 
 import express, { Request, Response } from "express";
 
+import { getIO } from "../socket/socket";
+
 const router = express.Router();
 
-router.post("/send-location-share", requireAuth, async (req: Request, res: Response) => {
-    const { requesterId, sharerId } = req.body;
-    if(!requesterId || !sharerId) {
-        return res.status(400).json({ error: "Missing requesterId or sharerId" });
+router.get("/requests", requireAuth, async (req: Request, res: Response) => {
+    const currentUser = await prisma.user.findUnique({
+        where: {
+            authId: req.supabaseUser.id
+        }
+    });
+
+    if (!currentUser) {
+        return res.status(404).json({ error: "Current user not found" });
+    }
+
+    const requests = await prisma.locationShare.findMany({
+        where: { sharerId: currentUser.id, status: "REQUESTED" },
+        include: { requester: true },
+        orderBy: { createdAt: "desc" },
+    });
+
+    res.status(200).json(requests);
+});
+
+router.post("/request-location-share", requireAuth, async (req: Request, res: Response) => {
+    const currentUser = await prisma.user.findUnique({
+        where: {
+            authId: req.supabaseUser.id
+        }
+    });
+    const { sharerId }  = req.body;
+
+    if (!currentUser) {
+        return res.status(404).json({ error: "Current user not found" });
     }
 
     try {
         const locationShareRequest = await prisma.locationShare.create({
             data: {
-                requesterId,
+                requesterId: currentUser.id,
                 sharerId,
                 status: "REQUESTED",
                 createdAt: new Date(),
             }
         });
-        console.log(locationShareRequest);
         res.status(201).json(locationShareRequest);
     } catch (error) {
         console.error(error);
@@ -48,7 +75,10 @@ router.patch("/:id/accept", requireAuth, async (req: Request, res: Response) => 
             return res.status(404).json({ error: "No pending share with that id for you" });
         }
 
-        const share = await prisma.locationShare.findUnique({ where: { id: req.params.id } });
+        const share = await prisma.locationShare.findUnique({ where: { id: req.params.id }, include: { sharer: {select: { id: true, username: true } } } });
+        if (share) {
+            getIO().to(`user:${share.requesterId}`).emit("locationShare:accepted", share);
+        }
         res.status(200).json(share);
     } catch (error) {
         console.error("PATCH /accept failed:", error);
