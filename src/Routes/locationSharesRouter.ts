@@ -124,7 +124,7 @@ router.patch("/:id/end", requireAuth, async (req: Request, res: Response) => {
         }
 
         const result = await prisma.locationShare.updateMany({
-            where: { id: req.params.id, sharerId: currentUser.id, status: "ACTIVE", OR: [{requesterId: currentUser.id }, {sharerId: currentUser.id}] },
+            where: { id: req.params.id, status: "ACTIVE", OR: [{requesterId: currentUser.id }, {sharerId: currentUser.id}] },
             data: { status: "ENDED", endedAt: new Date() }
         });
 
