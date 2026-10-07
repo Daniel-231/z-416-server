@@ -34,6 +34,10 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use((err: unknown, _req: Request, res: Response, _next: Function) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: "Internal Server Error" });
+});
 
 server.listen(PORT, () => {
   console.log(`Express Server is Listening On Port: ${PORT}`);
