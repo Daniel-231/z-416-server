@@ -63,7 +63,7 @@ router.get("/friend_requests", requireAuth, async (req: Request, res: Response) 
 });
 
 router.post("/send_request", requireAuth, async (req: Request, res: Response) => {
-    const { username } = req.body;
+    const { username } = req.body ?? {};
     if (typeof username !== "string" || username.trim().length === 0) {
         return res.status(400).json({ error: "username is required" });
     }

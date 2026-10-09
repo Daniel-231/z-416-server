@@ -9,6 +9,10 @@ router.post("/sync", requireAuth, async (req: Request, res: Response) => { // Sy
   const supaUser = req.supabaseUser;
   const { username } = req.body ?? {};
 
+  if (typeof username !== "string" || username.trim().length === 0) {
+    return res.status(400).json({ error: "username is required" });
+  }
+
 
   try {
     const user = await prisma.user.upsert({
