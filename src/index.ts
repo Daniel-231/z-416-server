@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-//app.use('/users', usersRouter);
+app.use('/users', usersRouter);
 app.use('/auth', authRouter);
 app.use('/friends', friendsRouter);
 app.use('/location-share', locationSharesRouter);
