@@ -23,7 +23,7 @@ router.get("/requests", requireAuth, async (req: Request<LocationShareParams>, r
 
     const requests = await prisma.locationShare.findMany({
         where: { sharerId: currentUser.id, status: "REQUESTED" },
-        include: { requester: true },
+        include: { requester: { select: { id: true, username: true } } },
         orderBy: { createdAt: "desc" },
     });
 
@@ -36,7 +36,7 @@ router.post("/request-location-share", requireAuth, async (req: Request<Location
             authId: req.supabaseUser.id
         }
     });
-    const { sharerId }  = req.body;
+    const { sharerId }  = req.body ?? {};
 
     if (!currentUser) {
         return res.status(404).json({ error: "Current user not found" });

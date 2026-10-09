@@ -6,18 +6,14 @@ import { requireAuth } from "../Middleware/requireAuth";
 const router = Router();
 
 router.post("/sync", requireAuth, async (req: Request, res: Response) => { // Sync Supabase User With SQL User
-  const supaUser = req.supabaseUser!;
-  const username = req.body.username;
-
-  if (typeof username !== "string" || username.trim().length === 0) {
-    return res.status(400).json({ error: "Username is required" });
-  }
+  const supaUser = req.supabaseUser;
+  const { username } = req.body ?? {};
 
 
   try {
     const user = await prisma.user.upsert({
     where: { authId: supaUser.id },
-    update: { email: supaUser.email! },
+    update: { email: supaUser.email! }, // if phone numbers are ever added as a sign-in method, this will need to be updated accordingly.
     create: {
       authId: supaUser.id,
       email: supaUser.email!,
