@@ -61,14 +61,12 @@ export function initSocket(server: HttpServer): Server {
     });
      
     // client sends their location to room
-    socket.on('sendLocation', ({ roomId, location }: { roomId: string; location: LocationDataType; }) => {
-      // “emit to all sockets in this room except this socket.” So A will not receive A’s own update, but B will
-      socket.to(roomId).emit("sendLocation", {
-        from: socket.id,
-        location,
-      });
-      console.log(`Device Location ${socket.id}: ${location.coords.latitude}, ${location.coords.longitude} sent to roomId: ${roomId}`);
+    socket.on('sendLocation', (payload) => {
+      const { roomId, location } = payload ?? {};
+      if (typeof roomId !== 'string' || typeof location?.coords?.latitude !== 'number' || typeof location?.coords?.longitude !== 'number') return;
+      socket.to(roomId).emit("sendLocation", { from: socket.id, location });
     });
+
 
 
     socket.on('disconnect', (reason) => {

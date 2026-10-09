@@ -8,7 +8,9 @@ import { getIO } from "../socket/socket";
 
 const router = express.Router();
 
-router.get("/requests", requireAuth, async (req: Request, res: Response) => {
+type LocationShareParams = { id: string };
+
+router.get("/requests", requireAuth, async (req: Request<LocationShareParams>, res: Response) => {
     const currentUser = await prisma.user.findUnique({
         where: {
             authId: req.supabaseUser.id
@@ -28,7 +30,7 @@ router.get("/requests", requireAuth, async (req: Request, res: Response) => {
     res.status(200).json(requests);
 });
 
-router.post("/request-location-share", requireAuth, async (req: Request, res: Response) => {
+router.post("/request-location-share", requireAuth, async (req: Request<LocationShareParams>, res: Response) => {
     const currentUser = await prisma.user.findUnique({
         where: {
             authId: req.supabaseUser.id
@@ -56,7 +58,7 @@ router.post("/request-location-share", requireAuth, async (req: Request, res: Re
     }
 });
 
-router.patch("/:id/accept", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:id/accept", requireAuth, async (req: Request<LocationShareParams>, res: Response) => {
     try {
         const currentUser = await prisma.user.findUnique({
             where: { authId: req.supabaseUser.id }
@@ -86,7 +88,7 @@ router.patch("/:id/accept", requireAuth, async (req: Request, res: Response) => 
     }
 });
 
-router.patch("/:id/decline", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:id/decline", requireAuth, async (req: Request<LocationShareParams>, res: Response) => {
     try {
         const currentUser = await prisma.user.findUnique({
             where: { authId: req.supabaseUser.id }
@@ -113,7 +115,7 @@ router.patch("/:id/decline", requireAuth, async (req: Request, res: Response) =>
     }
 });
 
-router.patch("/:id/end", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:id/end", requireAuth, async (req: Request<LocationShareParams>, res: Response) => {
     try {
         const currentUser = await prisma.user.findUnique({
             where: { authId: req.supabaseUser.id }
@@ -124,7 +126,7 @@ router.patch("/:id/end", requireAuth, async (req: Request, res: Response) => {
         }
 
         const result = await prisma.locationShare.updateMany({
-            where: { id: req.params.id, sharerId: currentUser.id, status: "ACTIVE", OR: [{requesterId: currentUser.id }, {sharerId: currentUser.id}] },
+            where: { id: req.params.id, status: "ACTIVE", OR: [{requesterId: currentUser.id }, {sharerId: currentUser.id}] },
             data: { status: "ENDED", endedAt: new Date() }
         });
 

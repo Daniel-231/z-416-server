@@ -6,6 +6,7 @@ import { prisma } from "../lib/prisma";
 
 const router = Router();
 
+type FriendRequestParams = { id: string };
 
 router.get("/all_friends", requireAuth, async (req: Request, res: Response) => {
     try {
@@ -110,7 +111,7 @@ router.post("/send_request", requireAuth, async (req: Request, res: Response) =>
     }
 });
 
-router.put("/:id/accept_request", requireAuth, async (req: Request, res: Response) => {
+router.put("/:id/accept_request", requireAuth, async (req: Request<FriendRequestParams>, res: Response) => {
     try {
         const currentUser = await prisma.user.findUnique({
             where: { authId: req.supabaseUser!.id }
@@ -141,7 +142,7 @@ router.put("/:id/accept_request", requireAuth, async (req: Request, res: Respons
     }
 });
 
-router.put("/:id/decline_request", requireAuth, async (req: Request, res: Response) => {
+router.put("/:id/decline_request", requireAuth, async (req: Request<FriendRequestParams>, res: Response) => {
   try {
     const currentUser = await prisma.user.findUnique({
       where: { authId: req.supabaseUser.id },
