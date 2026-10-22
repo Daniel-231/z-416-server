@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 
 import { initSocket } from './socket/socket';
+import { prisma } from './lib/prisma';
 
 dotenv.config();
 
@@ -30,8 +31,14 @@ app.use('/location-share', locationSharesRouter);
  // Initialize WebSocket server
 initSocket(server);
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+app.get("/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw `SELECT 1`;
+    res.json({ status: "ok", db: "ok" });
+  } catch (error) {
+    console.error("Health check: DB unreachable", error);
+    res.status(503).json({ status: "degraded", db: "unreachable" });
+  }
 });
 
 app.use((err: unknown, _req: Request, res: Response, _next: Function) => {
